@@ -48,7 +48,7 @@ WATCHLIST_FILE = "watchlist.json"
 # ---------------------------------------------------------------------------
 
 # Получить токен: написать @BotFather в Telegram -> /newbot
-TELEGRAM_BOT_TOKEN = ""
+TELEGRAM_BOT_TOKEN = "8733158527:AAFxCrIEwSWsfeFtMo9i62JBYh_i2HTuXNc"
 
 # ID чата/канала, куда слать сообщения. Проще всего узнать через @userinfobot
 # (для канала — добавить бота в канал администратором; chat_id канала
