@@ -3,7 +3,14 @@
 
 Это единственный файл, который вам, скорее всего, придётся редактировать
 самостоятельно — просто меняя цифры, без программирования.
+
+TELEGRAM_BOT_TOKEN и TELEGRAM_CHAT_ID теперь можно (и рекомендуется)
+задавать через вкладку "Variables" в Railway — так же, как DATABASE_URL —
+вместо редактирования этого файла. Если переменные окружения не заданы,
+используются значения ниже как резервные.
 """
+
+import os
 
 # ---------------------------------------------------------------------------
 # Общие настройки
@@ -23,9 +30,9 @@ ESTABLISHED_MIN_AGE_DAYS = 7
 # в сканер "новых токенов"
 NEW_TOKEN_MAX_AGE_MIN = 60
 
-# Solana RPC endpoint. Если есть Helius API-ключ — впишите сюда.
-# Если ключа нет, можно оставить публичный RPC (медленнее, могут быть лимиты).
-HELIUS_API_KEY = ""  # впишите сюда ключ с helius.dev, если он у вас есть
+# Solana RPC endpoint. Если есть Helius API-ключ — можно задать через
+# Railway Variables (имя HELIUS_API_KEY), либо вписать прямо сюда.
+HELIUS_API_KEY = os.environ.get("HELIUS_API_KEY", "")
 SOLANA_RPC_URL = (
     f"https://mainnet.helius-rpc.com/?api-key={HELIUS_API_KEY}"
     if HELIUS_API_KEY
@@ -48,12 +55,20 @@ WATCHLIST_FILE = "watchlist.json"
 # ---------------------------------------------------------------------------
 
 # Получить токен: написать @BotFather в Telegram -> /newbot
-TELEGRAM_BOT_TOKEN = "8733158527:AAFxCrIEwSWsfeFtMo9i62JBYh_i2HTuXNc"
+#
+# РЕКОМЕНДУЕТСЯ: задайте это через Railway -> сервис бота -> Variables ->
+# New Variable -> имя TELEGRAM_BOT_TOKEN. Тогда редактировать этот файл
+# не нужно вообще. Значение ниже используется только если переменная
+# окружения не задана.
+TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 
 # ID чата/канала, куда слать сообщения. Проще всего узнать через @userinfobot
 # (для канала — добавить бота в канал администратором; chat_id канала
 # обычно начинается с -100...)
-TELEGRAM_CHAT_ID = "5546993402"
+#
+# РЕКОМЕНДУЕТСЯ: так же, как токен выше — задать через Railway Variables
+# под именем TELEGRAM_CHAT_ID.
+TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
 
 # Как часто присылать сводный отчёт (в секундах)
 HOURLY_REPORT_INTERVAL_SEC = 3600  # 1 час
