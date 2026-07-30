@@ -1,10 +1,15 @@
 """
 Подключение к базе данных Postgres.
 
+Использует современную библиотеку psycopg (версия 3, пакет
+"psycopg[binary,pool]"), а не устаревшую psycopg2 — у неё есть готовая
+"binary"-версия со своей встроенной копией libpq внутри пакета, поэтому
+не нужно отдельно ставить системную библиотеку libpq5 и не бывает
+конфликтов с новыми версиями Python (в отличие от psycopg2).
+
 Railway сам создаёт переменную окружения DATABASE_URL, когда вы
 добавляете в проект плагин PostgreSQL ("New" -> "Database" -> "Add
-PostgreSQL"). Никаких паролей вручную вводить не нужно — Railway всё
-подставит сам.
+PostgreSQL"). Ничего вписывать вручную не нужно.
 
 Если DATABASE_URL не найдена (Postgres ещё не подключён) — is_configured()
 вернёт False, и остальные модули (storage.py, confirmed.py, watchlist.py)
@@ -14,8 +19,7 @@ PostgreSQL"). Никаких паролей вручную вводить не �
 
 import os
 import asyncio
-import psycopg2
-from psycopg2 import pool as pg_pool
+from psycopg_pool import ConnectionPool
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
 
@@ -29,29 +33,26 @@ def is_configured() -> bool:
 def _get_pool():
     global _pool
     if _pool is None and DATABASE_URL:
-        _pool = pg_pool.SimpleConnectionPool(1, 5, DATABASE_URL)
+        _pool = ConnectionPool(DATABASE_URL, min_size=1, max_size=5, open=True)
     return _pool
 
 
 def _run_sync(query, params=None, fetch=False, fetchone=False):
     pool = _get_pool()
-    conn = pool.getconn()
     try:
-        with conn.cursor() as cur:
-            cur.execute(query, params or ())
-            result = None
-            if fetchone:
-                result = cur.fetchone()
-            elif fetch:
-                result = cur.fetchall()
-            conn.commit()
-            return result
+        with pool.connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(query, params or ())
+                result = None
+                if fetchone:
+                    result = cur.fetchone()
+                elif fetch:
+                    result = cur.fetchall()
+                conn.commit()
+                return result
     except Exception as e:
-        conn.rollback()
         print(f"[db] Ошибка запроса к базе: {e}")
         raise
-    finally:
-        pool.putconn(conn)
 
 
 async def run(query, params=None, fetch=False, fetchone=False):
