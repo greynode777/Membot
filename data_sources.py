@@ -132,6 +132,22 @@ def get_top10_concentration(mint_address):
 # ---------------------------------------------------------------------------
 
 def is_listed_on_coingecko(token_address, platform="solana"):
+    """
+    Возвращает True (точно листингован), False (точно НЕ листингован,
+    сервер ответил 404) или None (не удалось проверить — например,
+    сработал лимит запросов 429; в этом случае считаем "неизвестно",
+    а не "не листингован", чтобы не наказывать токен за чужую ошибку).
+    """
     url = f"https://api.coingecko.com/api/v3/coins/{platform}/contract/{token_address}"
-    data = _safe_get(url)
-    return data is not None and "id" in data
+    try:
+        resp = requests.get(url, timeout=10)
+        if resp.status_code == 200:
+            data = resp.json()
+            return "id" in data
+        elif resp.status_code == 404:
+            return False
+        else:
+            return None  # 429 (лимит) или другая ошибка сервера — неизвестно
+    except Exception as e:
+        print(f"[data_sources] Ошибка запроса CoinGecko: {e}")
+        return None
