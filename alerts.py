@@ -4,6 +4,22 @@
 русские подписи, чтобы в алерте были видны реальные причины рекомендации.
 """
 
+import html
+
+
+def _esc(value) -> str:
+    """
+    Экранирует HTML-спецсимволы (< > &) в тексте из внешних источников
+    (название токена и т.п.) прямо перед вставкой в сообщение Telegram.
+    Без этого токен с "<" в названии ломает парсинг HTML и вешает бота
+    в бесконечном повторе отправки. Безопасно вызывать даже если значение
+    уже было экранировано раньше — в худшем случае текст покажет
+    "&amp;" вместо "&", что некрасиво, но не ломает бота.
+    """
+    if not value:
+        return ""
+    return html.escape(str(value))
+
 FACTOR_LABELS = {
     # Risk (новые токены)
     "mint_disabled": "Mint отключён",
@@ -90,7 +106,7 @@ def observed_list_message(entries: list) -> str:
 
     lines = [f"👀 <b>На 2-часовом наблюдении: {len(entries)}</b>\n"]
     for e in entries:
-        name = e.get("name") or e["address"][:8]
+        name = _esc(e.get("name")) or e["address"][:8]
         baseline = e.get("baseline_score_pct")
         last = e.get("last_score_pct")
         scan_count = e.get("scan_count", 0)
@@ -110,7 +126,7 @@ def monitoring_list_message(entries: list) -> str:
 
     lines = [f"📡 <b>Под 12-часовым мониторингом: {len(entries)}</b>\n"]
     for e in entries:
-        name = e.get("name") or e["address"][:8]
+        name = _esc(e.get("name")) or e["address"][:8]
         score = e.get("last_score")
         verdict = e.get("last_verdict")
         source = e.get("source", "")
@@ -157,7 +173,7 @@ def hourly_report(stats: dict) -> str:
 
 
 def new_token_recommendation(result: dict, address: str, name: str = "") -> str:
-    label_name = name or address[:8] + "..."
+    label_name = _esc(name) or address[:8] + "..."
     return (
         "🚨 <b>НОВЫЙ ПЕРСПЕКТИВНЫЙ ТОКЕН</b> 🚨\n\n"
         f"💎 {label_name}\n"
@@ -172,9 +188,10 @@ def new_token_recommendation(result: dict, address: str, name: str = "") -> str:
 
 def candidate_recommendation_alert(name, address, baseline_pct, current_pct, scan_count, breakdown) -> str:
     delta = round(current_pct - baseline_pct, 1)
+    safe_name = _esc(name) or address[:8]
     return (
         "🚨 <b>ФУНДАМЕНТАЛ УЛУЧШИЛСЯ — РЕКОМЕНДАЦИЯ</b> 🚨\n\n"
-        f"💎 {name or address[:8]}\n"
+        f"💎 {safe_name}\n"
         f"📍 <code>{address}</code>\n"
         f"Fundamentals Score: {baseline_pct}% → <b>{current_pct}%</b> (+{delta})\n"
         f"Проверок с момента наблюдения: {scan_count}\n\n"
@@ -190,8 +207,9 @@ def fundamentals_change_alert(name, address, old_score, new_score, old_verdict, 
     delta = new_score - old_score
     sign = "+" if delta >= 0 else ""
     pct_line = f" ({score_pct}% от макс.)" if score_pct is not None else ""
+    safe_name = _esc(name) or address[:8]
     return (
-        f"{direction} <b>{name or address[:8]}</b>\n\n"
+        f"{direction} <b>{safe_name}</b>\n\n"
         f"📍 <code>{address}</code>\n"
         f"Балл: {old_score} → <b>{new_score}</b> ({sign}{delta}){pct_line}\n"
         f"Вердикт: {old_verdict} → <b>{new_verdict}</b>\n"

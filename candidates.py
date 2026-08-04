@@ -134,6 +134,32 @@ async def mark_recommended(address):
             _json_save(data)
 
 
+async def get_all_observed():
+    """Все токены в статусе 'observed' прямо сейчас (для команды /observed
+    в Telegram) — без фильтра по времени следующей проверки."""
+    if db.is_configured():
+        rows = await db.run(
+            f"SELECT address, name, baseline_score_pct, last_score_pct, "
+            f"scan_count, next_scan_ts FROM {config.CANDIDATES_TABLE} "
+            "WHERE status = 'observed' ORDER BY next_scan_ts ASC",
+            fetch=True,
+        )
+        rows = rows or []
+        return [
+            {"address": r[0], "name": r[1], "baseline_score_pct": r[2],
+             "last_score_pct": r[3], "scan_count": r[4], "next_scan_ts": r[5]}
+            for r in rows
+        ]
+    else:
+        data = _json_load()
+        entries = [
+            {"address": addr, **entry}
+            for addr, entry in data.items()
+            if entry["status"] == "observed"
+        ]
+        return sorted(entries, key=lambda e: e.get("next_scan_ts") or 0)
+
+
 async def get_due_observed():
     if db.is_configured():
         rows = await db.run(

@@ -35,6 +35,28 @@ async def add_token(address, name, initial_score, initial_verdict, source="new_t
         _json_add_token(address, name, initial_score, initial_verdict, source)
 
 
+async def get_all():
+    """Все токены под 12ч-мониторингом прямо сейчас (для команды
+    /monitoring в Telegram) — без фильтра по времени следующей проверки."""
+    if db.is_configured():
+        rows = await db.run(
+            "SELECT address, name, source, added_ts, last_score, last_verdict, "
+            "next_check_ts FROM confirmed_tokens ORDER BY next_check_ts ASC",
+            fetch=True,
+        )
+        rows = rows or []
+        return [
+            {
+                "address": r[0], "name": r[1], "source": r[2], "added_ts": r[3],
+                "last_score": r[4], "last_verdict": r[5], "next_check_ts": r[6],
+            }
+            for r in rows
+        ]
+    else:
+        tokens = _json_load()
+        return sorted(tokens, key=lambda t: t.get("next_check_ts") or 0)
+
+
 async def get_due_tokens():
     if db.is_configured():
         rows = await db.run(

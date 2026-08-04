@@ -871,7 +871,7 @@ async def render_portfolio_view() -> str:
     lines = [f"💼 <b>Портфель: {len(positions)}</b>\n"]
     for p in positions:
         pair = ds.get_best_pair_for_token(p["address"])
-        name = p.get("name") or p["address"][:8]
+        name = _safe_text(p.get("name")) or p["address"][:8]
         entry = p["entry_price"]
         if pair and entry:
             current = float(pair.get("priceUsd", 0) or 0)
@@ -917,7 +917,7 @@ async def portfolio_scan_once():
         last_alert = p.get("last_alert_pct") or 0
 
         if abs(pnl_pct - last_alert) >= config.PORTFOLIO_ALERT_THRESHOLD_PCT:
-            name = p.get("name") or address[:8]
+            name = _safe_text(p.get("name")) or address[:8]
             sign = "+" if pnl_pct >= 0 else ""
             emoji = "🚀" if pnl_pct >= 0 else "⚠️"
             await telegram.send_message(
