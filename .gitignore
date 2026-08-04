@@ -5,3 +5,8 @@ __pycache__/
 venv/
 snapshots.json
 confirmed_tokens.json
+candidates.json
+dev_wallets.json
+bundle_checks.json
+score_history.json
+portfolio.json
